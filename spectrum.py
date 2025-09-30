@@ -1,17 +1,14 @@
 import numpy as np
 
-# SpectrumAnalyzer
-class SpectrumAnalyzer:
+class Analyzer:
     @staticmethod
-    def compute_fft(signal, fs, max_freq=50):
+    def arifm(signal: np.ndarray, fs: int, max_freq: float = 50.0):
         n = len(signal)
-        freqs = np.fft.rfftfreq(n, 1 / fs)
-        spectrum = np.abs(np.fft.rfft(signal)) / n
-        spectrum[0] = 0
+        freqs_full = np.fft.rfftfreq(n, d=1 / fs)
+        spectrum_full = np.abs(np.fft.rfft(signal)) / n
+        spectrum_full[0] = 0
 
-        mask = freqs <= max_freq
-        limited_freqs = freqs[mask]
-        limited_spectrum = spectrum[mask]
+        freqs = freqs_full[freqs_full <= max_freq]
+        spectrum = spectrum_full[freqs_full <= max_freq]
 
-
-        return limited_freqs, limited_spectrum
+        return freqs, spectrum

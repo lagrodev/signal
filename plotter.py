@@ -1,184 +1,64 @@
-import matplotlib.pyplot as plt
 import os
-import numpy as np
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
-# plotter
-class Plotter:
+class Graph:
     @staticmethod
-    def save_signal(t, signal, title, filename, draw_initial_pulse = False):
-        os.makedirs("graphics", exist_ok=True)
-        plt.figure(figsize=(8, 4))
-        plt.plot(t, signal, linewidth=1.5)
+    def save_combined_plot(t, signals_data, filename="all_signals_and_spectra.png"):
 
-        if draw_initial_pulse:
-            plt.vlines(0, 0.5, 1,linewidth=1.5)
+        fig, axes = plt.subplots(4, 4, figsize=(16, 12))
+        fig.suptitle("Анализ сигналов: гармонический и цифровой (меандр)", fontsize=16, fontweight='bold')
 
-        plt.title(title, fontsize=14)
-        plt.xlabel("Время (с)", fontsize=12)
-        plt.ylabel("Амплитуда", fontsize=12)
+        for i, (freq, sine_sig, square_sig, sine_freqs, sine_spec, square_freqs, square_spec) in enumerate(signals_data):
+            ax1 = axes[i, 0]
+            ax1.plot(t, sine_sig, color='green', linewidth=1.2)
+            ax1.set_title(f"Гармонический — {freq} Гц", fontsize=10)
+            ax1.set_xlabel("Время (с)", fontsize=9)
+            ax1.set_ylabel("Амплитуда", fontsize=9)
+            ax1.grid(True, linestyle='--', alpha=0.6)
+            ax1.set_xlim(0, 1.0)
+            ax1.xaxis.set_major_locator(MultipleLocator(0.2))
+            ax1.xaxis.set_minor_locator(MultipleLocator(0.05))
+            ax1.yaxis.set_major_locator(MultipleLocator(0.5))
+            ax1.yaxis.set_minor_locator(MultipleLocator(0.1))
 
-        ax = plt.gca()
 
-        x_range = t[-1] - t[0]
-        if x_range <= 1:
-            x_major_step = 0.1
-            x_minor_step = 0.02
-        elif x_range <= 5:
-            x_major_step = 0.5
-            x_minor_step = 0.1
-        else:
-            x_major_step = 1
-            x_minor_step = 0.2
+            ax2 = axes[i, 1]
+            ax2.stem(sine_freqs, sine_spec, linefmt='r-', markerfmt='ro', basefmt=" ")
+            ax2.set_title(f"Спектр — {freq} Гц", fontsize=10)
+            ax2.set_xlabel("Частота (Гц)", fontsize=9)
+            ax2.set_ylabel("Амплитуда", fontsize=9)
+            ax2.grid(True, linestyle='--', alpha=0.6)
+            ax2.set_xlim(0, 50)
+            ax2.xaxis.set_major_locator(MultipleLocator(10))
+            ax2.xaxis.set_minor_locator(MultipleLocator(2))
+            ax2.set_ylim(bottom=0)
 
-        ax.xaxis.set_major_locator(MultipleLocator(x_major_step))
-        ax.xaxis.set_minor_locator(MultipleLocator(x_minor_step))
+            ax3 = axes[i, 2]
+            ax3.plot(t, square_sig, color='blue', linewidth=1.2)
+            ax3.set_title(f"Меандр — {freq} Гц", fontsize=10)
+            ax3.set_xlabel("Время (с)", fontsize=9)
+            ax3.set_ylabel("Амплитуда", fontsize=9)
+            ax3.grid(True, linestyle='--', alpha=0.6)
+            ax3.set_xlim(0, 1.0)
+            ax3.xaxis.set_major_locator(MultipleLocator(0.2))
+            ax3.xaxis.set_minor_locator(MultipleLocator(0.05))
+            ax3.yaxis.set_major_locator(MultipleLocator(0.5))
+            ax3.yaxis.set_minor_locator(MultipleLocator(0.1))
 
-        y_range = np.max(signal) - np.min(signal)
-        if y_range <= 1:
-            y_major_step = 0.1
-            y_minor_step = 0.02
-        elif y_range <= 5:
-            y_major_step = 0.5
-            y_minor_step = 0.1
-        else:
-            y_major_step = 1
-            y_minor_step = 0.2
 
-        ax.yaxis.set_major_locator(MultipleLocator(y_major_step))
-        ax.yaxis.set_minor_locator(MultipleLocator(y_minor_step))
+            ax4 = axes[i, 3]
+            ax4.stem(square_freqs, square_spec, linefmt='purple', markerfmt='mo', basefmt=" ")
+            ax4.set_title(f"Спектр — {freq} Гц", fontsize=10)
+            ax4.set_xlabel("Частота (Гц)", fontsize=9)
+            ax4.set_ylabel("Амплитуда", fontsize=9)
+            ax4.grid(True, linestyle='--', alpha=0.6)
+            ax4.set_xlim(0, 50)
+            ax4.xaxis.set_major_locator(MultipleLocator(10))
+            ax4.xaxis.set_minor_locator(MultipleLocator(2))
+            ax4.set_ylim(bottom=0)
 
-        plt.grid(True, which='major', alpha=0.5)
-        plt.grid(True, which='minor', alpha=0.2)
-
-        plt.tight_layout()
-        plt.savefig(os.path.join("graphics", filename), dpi=150)
+        plt.tight_layout(rect=[0, 0.02, 1, 0.95])
+        os.makedirs("output", exist_ok=True)
+        plt.savefig(f"output/{filename}", dpi=300, bbox_inches='tight')
         plt.close()
-
-    @staticmethod
-    def save_spectrum(freqs, spectrum, title, filename):
-        os.makedirs("graphics", exist_ok=True)
-        plt.figure(figsize=(8, 4))
-        plt.plot(freqs, spectrum, linewidth=1.5)
-        plt.title(title, fontsize=14)
-        plt.xlabel("Частота (Гц)", fontsize=12)
-        plt.ylabel("Амплитуда", fontsize=12)
-
-        ax = plt.gca()
-
-        x_range = freqs[-1] if len(freqs) > 0 else 50
-        if x_range <= 10:
-            x_major_step = 1
-            x_minor_step = 0.2
-        elif x_range <= 50:
-            x_major_step = 5
-            x_minor_step = 1
-        elif x_range <= 100:
-            x_major_step = 10
-            x_minor_step = 2
-        else:
-            x_major_step = 20
-            x_minor_step = 5
-
-        ax.xaxis.set_major_locator(MultipleLocator(x_major_step))
-        ax.xaxis.set_minor_locator(MultipleLocator(x_minor_step))
-
-        y_max = np.max(spectrum) if len(spectrum) > 0 else 1
-        if y_max <= 0.1:
-            y_major_step = 0.02
-            y_minor_step = 0.005
-        elif y_max <= 0.5:
-            y_major_step = 0.1
-            y_minor_step = 0.02
-        elif y_max <= 1:
-            y_major_step = 0.2
-            y_minor_step = 0.05
-        else:
-            y_major_step = 0.5
-            y_minor_step = 0.1
-
-        ax.yaxis.set_major_locator(MultipleLocator(y_major_step))
-        ax.yaxis.set_minor_locator(MultipleLocator(y_minor_step))
-
-        plt.grid(True, which='major', alpha=0.5)
-        plt.grid(True, which='minor', alpha=0.2)
-
-        plt.tight_layout()
-        plt.savefig(os.path.join("graphics", filename), dpi=150)
-        plt.close()
-
-    @staticmethod
-    def make_combined_plot(t, signal, freqs, spectrum, title, draw_initial_pulse = False):
-        fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-
-        axes[0].plot(t, signal, linewidth=1.5)
-
-        axes[0].set_title(f"{title} — сигнал", fontsize=14)
-        axes[0].set_xlabel("Время (с)", fontsize=12)
-        axes[0].set_ylabel("Амплитуда", fontsize=12)
-
-        x_range = t[-1] - t[0]
-        if x_range <= 1:
-            x_major_step = 0.1
-            x_minor_step = 0.02
-        else:
-            x_major_step = 0.5
-            x_minor_step = 0.1
-
-        axes[0].xaxis.set_major_locator(MultipleLocator(x_major_step))
-        axes[0].xaxis.set_minor_locator(MultipleLocator(x_minor_step))
-
-        y_range = np.max(signal) - np.min(signal)
-        if y_range <= 1:
-            y_major_step = 0.1
-            y_minor_step = 0.02
-        else:
-            y_major_step = 0.5
-            y_minor_step = 0.1
-
-        axes[0].yaxis.set_major_locator(MultipleLocator(y_major_step))
-        axes[0].yaxis.set_minor_locator(MultipleLocator(y_minor_step))
-
-        axes[0].grid(True, which='major', alpha=0.5)
-        axes[0].grid(True, which='minor', alpha=0.2)
-
-        axes[1].plot(freqs, spectrum, linewidth=1.5)
-
-
-        axes[1].set_title(f"{title} — спектр", fontsize=14)
-        axes[1].set_xlabel("Частота (Гц)", fontsize=12)
-        axes[1].set_ylabel("Амплитуда", fontsize=12)
-
-        x_range = freqs[-1] if len(freqs) > 0 else 50
-        if x_range <= 10:
-            x_major_step = 1
-            x_minor_step = 0.2
-        elif x_range <= 50:
-            x_major_step = 5
-            x_minor_step = 1
-        else:
-            x_major_step = 10
-            x_minor_step = 2
-
-        axes[1].xaxis.set_major_locator(MultipleLocator(x_major_step))
-        axes[1].xaxis.set_minor_locator(MultipleLocator(x_minor_step))
-
-        y_max = np.max(spectrum) if len(spectrum) > 0 else 1
-        if y_max <= 0.1:
-            y_major_step = 0.02
-            y_minor_step = 0.005
-        elif y_max <= 0.5:
-            y_major_step = 0.1
-            y_minor_step = 0.02
-        else:
-            y_major_step = 0.2
-            y_minor_step = 0.05
-
-        axes[1].yaxis.set_major_locator(MultipleLocator(y_major_step))
-        axes[1].yaxis.set_minor_locator(MultipleLocator(y_minor_step))
-
-        axes[1].grid(True, which='major', alpha=0.5)
-        axes[1].grid(True, which='minor', alpha=0.2)
-
-        plt.tight_layout()
-        return fig

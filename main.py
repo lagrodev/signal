@@ -1,102 +1,36 @@
-import sys
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton
-)
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import os
+from signals import Signal
+from spectrum import Analyzer
+from plotter import Graph
 
-from signals import SignalGenerator
-from spectrum import SpectrumAnalyzer
-from plotter import Plotter
+FREQUENCIES = [1, 2, 4, 8]
+DURATION = 2.0
+print("Генерация сигналов и спектров...")
 
-#main
-class MainApp(QWidget):
-    def __init__(self):
-        super().__init__()
+def main():
+    gen = Signal(DURATION)
+    signals_data = []
 
-        self.setWindowTitle("Анализ сигналов")
-        self.generator = SignalGenerator()
+    for f in FREQUENCIES:
+        print(f"  -> Обработка {f} Гц...")
 
-        layout = QVBoxLayout()
+        sine_sig = gen.sine(f)
+        sine_freqs, sine_spec = Analyzer.arifm(sine_sig, gen.fs, max_freq=50)
 
+        square_sig = gen.unipolar_square(f)
+        square_freqs, square_spec = Analyzer.arifm(square_sig, gen.fs, max_freq=50)
 
-        controls = QHBoxLayout()
-        self.fs_input = QLineEdit("1000")
-        self.duration_input = QLineEdit("1")
+        signals_data.append((
+            f,
+            sine_sig,
+            square_sig,
+            sine_freqs,
+            sine_spec,
+            square_freqs,
+            square_spec
+        ))
 
-        controls.addWidget(QLabel("duration (с):"))
-        controls.addWidget(self.duration_input)
-
-        self.button = QPushButton("Построить")
-        self.button.clicked.connect(self.create)
-
-        self.canvas = None
-
-        layout.addLayout(controls)
-        layout.addWidget(self.button)
-        self.setLayout(layout)
-
-    def create(self):
-        fs = int(self.fs_input.text())
-        duration = float(self.duration_input.text())
-        self.generator.update_params(fs, duration)
-
-        freqs_to_test = [1, 2, 4, 8]
-        last_fig = None
-
-        for f in freqs_to_test:
-            #  синус
-            sig = self.generator.generate_sine(f)
-            fr, sp = SpectrumAnalyzer.compute_fft(sig, fs)
-
-            Plotter.save_signal(
-                self.generator.t, sig,
-                f"Гармонический сигнал - {f} Гц",
-                f"signal_garm_{f}.png"
-            )
-            Plotter.save_spectrum(
-                fr, sp,
-                f"Гармонический {f} Гц",
-                f"spectrum_garm_{f}.png"
-            )
-
-            last_fig = Plotter.make_combined_plot(
-                self.generator.t, sig, fr, sp,
-                f"Синус {f} Гц"
-            )
-
-            # меандр
-            sig = self.generator.generate_square(f)
-            fr, sp = SpectrumAnalyzer.compute_fft(sig, fs)
-
-            Plotter.save_signal(
-                self.generator.t, sig,
-                f"Меандр {f} Гц",
-                f"signal_square_{f}.png",
-                True
-            )
-            Plotter.save_spectrum(
-                fr, sp,
-                f"Меандр {f} Гц",
-                f"spectrum_square_{f}.png"
-            )
-
-            # last_fig = Plotter.make_combined_plot(
-            #     self.generator.t, sig, fr, sp,
-            #     f"Меандр {f} Гц",
-            #     True
-            # )
-
-        if self.canvas:
-            self.layout().removeWidget(self.canvas)
-            self.canvas.deleteLater()
-
-        self.canvas = FigureCanvas(last_fig)
-        self.layout().addWidget(self.canvas)
-
+    Graph.save_combined_plot(gen.t, signals_data, "all.png")
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainApp()
-    window.show()
-    sys.exit(app.exec_())
+    main()
